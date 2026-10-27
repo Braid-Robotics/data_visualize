@@ -1,0 +1,28 @@
+[project]
+name = "data-visualize"
+version = "0.1.0"
+description = "Rerun visualizers for Braid robot datasets (raw / rollout / action chunks)"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+authors = [
+    {name = "Heng Tian", email = "heng@braidrobotics.com"},
+]
+
+dependencies = [
+    "numpy>=2.2,<3",
+    # Zarr 2.x API (`zarr.open`) -- do NOT move to zarr 3.
+    "zarr>=2.18,<3",
+    # numcodecs <0.16: 0.16 made cbuffer_sizes/cbuffer_metainfo private but
+    # zarr 2.18.x still imports the public names -> ImportError.
+    "numcodecs>=0.13,<0.16",
+    # rerun's logging/blueprint API changes between minor releases, and the
+    # `rerun --connect` viewer must match the SDK version.
+    "rerun-sdk>=0.24,<0.27",
+    "av>=13",
+    "matplotlib>=3.9",
+    "opencv-python>=4.10,<5",
+]
+
+[tool.uv]
+# Scripts-only project: run as `uv run python <script>.py`. Nothing to build.
+package = false
