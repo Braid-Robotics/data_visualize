@@ -66,9 +66,17 @@ python visualize_rollout_chunks.py <offline_rollout> --config <train_set>/config
 python visualize_rollout_chunks.py <rollout_a> <rollout_b> --episode 0                 # A/B overlay
 ```
 
-Handles offline (`step_in_episode`) and online (`cycle` / `obs_ts`) policy logs. Online
-rollouts with width grippers get a gripper tab per arm (raw width of chunks t-1 / t / t+1
-and what was executed). `--radius-scale 10` for room-scale UMI scenes, `--chunk-stride N`
+Handles offline (`step_in_episode`) and online (`cycle` / `obs_ts`) policy logs. A single
+online rollout gets side tabs that follow the cursor over chunks t-1 / t / t+1, the arms
+side by side:
+
+- `gripper` (width grippers): raw width per chunk and what was executed (`--no-gripper`)
+- `xyz`: x / y / z / speed per chunk vs the time-indexed chunk, the measured eef and
+  the compliance node's `x_ref`; y autoscales per cycle (`--no-xyz`)
+- `signals`: TCP speed, tracking error, chunk switch jump / gap, |F|, inference and latency
+
+Lines and dots are sized for room-scale UMI scenes (`--radius-scale`,
+default 10; 1 for cm-scale weld chunks), `--chunk-stride N`
 to thin the overlay, `--tip` / `--seams seams.json` for the torch tip and the taught seam.
 
 ## Multi-arm placement

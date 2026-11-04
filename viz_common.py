@@ -396,6 +396,19 @@ def _port_in_use(port):
             return True
 
 
+def _is_grpc_server(port, timeout=1.0):
+    """A Rerun viewer answers the HTTP/2 preface with a SETTINGS frame; an ssh forward with
+    nothing behind it accepts the connection and drops it."""
+    preface = b"PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n" + b"\x00\x00\x00\x04\x00\x00\x00\x00\x00"
+    try:
+        with socket.create_connection(("127.0.0.1", port), timeout=timeout) as sk:
+            sk.sendall(preface)
+            head = sk.recv(9)
+    except OSError:
+        return False
+    return len(head) == 9 and head[3] == 0x04
+
+
 def select_sink(args, blueprint):
     if args.save:
         rr.save(args.save, default_blueprint=blueprint)
@@ -416,7 +429,14 @@ def select_sink(args, blueprint):
               f"  # via ssh:       ssh -L {args.grpc_port}:localhost:{args.grpc_port} <user>@<server>\n"
               f"                   rerun --connect rerun+http://localhost:{args.grpc_port}/proxy")
     else:
-        rr.spawn()
+        # rr.spawn() streams into whatever already listens on the port (e.g. an ssh
+        # RemoteForward) and the recording is silently lost
+        if _port_in_use(args.grpc_port) and not _is_grpc_server(args.grpc_port):
+            raise SystemExit(
+                f"[error] port {args.grpc_port} is held by something that is not a Rerun viewer "
+                f"(an ssh RemoteForward?).\n"
+                f"        Use:  --grpc-port {args.grpc_port + 1}   or   --save <file>.rrd")
+        rr.spawn(port=args.grpc_port)
         rr.send_blueprint(blueprint)
 
 
@@ -468,5 +488,6 @@ def add_tip_args(p):
 def add_sink_args(p, grpc_port):
     g = p.add_argument_group("output sink")
     g.add_argument("--serve", action="store_true", help="gRPC serve for headless/SSH viewing")
-    g.add_argument("--grpc-port", type=int, default=grpc_port)
+    g.add_argument("--grpc-port", type=int, default=grpc_port,
+                   help="Port to --serve on, or to spawn / reuse the local viewer on")
     g.add_argument("--save", default=None, help="Write .rrd instead of spawning a viewer")
